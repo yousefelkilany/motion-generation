@@ -1,0 +1,26 @@
+[project]
+name = "motion-s-text-to-sign"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "setuptools<70",
+    "torch>=2.10.0",
+    "clip",
+    "wheel>=0.46.3",
+    "upc-pymotion>=0.2.3",
+    "ftfy>=6.3.1",
+    "regex>=2026.1.15",
+    "einops>=0.8.2",
+    "tensorboard>=2.20.0",
+    "scipy>=1.17.0",
+    "matplotlib>=3.10.8",
+    "pandas>=3.0.0",
+]
+
+[tool.uv.sources]
+clip = { git = "https://github.com/openai/CLIP.git" }
+
+[tool.uv.extra-build-dependencies]
+clip = ["setuptools", "wheel"]
