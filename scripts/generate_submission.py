@@ -190,7 +190,7 @@ def generate_submission_from_csv(
         raise FileNotFoundError(f"Test CSV not found: {test_csv_path}")
 
     # Load test CSV
-    test_df = pd.read_csv(test_csv_path).head(100)
+    test_df = pd.read_csv(test_csv_path)
     print(f"\nLoaded test CSV: {len(test_df)} samples")
     print(f"Columns: {list(test_df.columns)}")
 

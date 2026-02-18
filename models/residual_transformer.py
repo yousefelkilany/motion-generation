@@ -268,9 +268,6 @@ class ResidualTransformer(nn.Module):
         # Combined positional encoding to avoid collision between text and motion
         xseq = torch.cat([cond, x], dim=0)  # (text_len + seq_len, B, latent_dim)
 
-        print(f"{x.shape = }")
-        print(f"{xseq.shape = }")
-
         xseq = self.pos_encoder(xseq)
 
         # Create combined padding mask

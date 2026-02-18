@@ -641,7 +641,7 @@ def tokenize_all_motions(
     vq_model.to(device)
 
     token_data = {}
-    motion_files = list(motion_dir.glob("*.npy"))[:100]
+    motion_files = list(motion_dir.glob("*.npy"))
 
     print(f"Tokenizing {len(motion_files)} motion files...")
 
