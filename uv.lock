@@ -485,6 +485,7 @@ dependencies = [
     { name = "setuptools" },
     { name = "tensorboard" },
     { name = "torch" },
+    { name = "tqdm" },
     { name = "upc-pymotion" },
     { name = "wheel" },
 ]
@@ -501,6 +502,7 @@ requires-dist = [
     { name = "setuptools", specifier = "<70" },
     { name = "tensorboard", specifier = ">=2.20.0" },
     { name = "torch", specifier = ">=2.10.0" },
+    { name = "tqdm", specifier = ">=4.67.3" },
     { name = "upc-pymotion", specifier = ">=0.2.3" },
     { name = "wheel", specifier = ">=0.46.3" },
 ]

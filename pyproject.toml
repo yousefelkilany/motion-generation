@@ -6,9 +6,9 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "setuptools<70",
-    "torch>=2.10.0",
-    "clip",
     "wheel>=0.46.3",
+    "clip",
+    "torch>=2.10.0",
     "upc-pymotion>=0.2.3",
     "ftfy>=6.3.1",
     "regex>=2026.1.15",
@@ -17,6 +17,7 @@ dependencies = [
     "scipy>=1.17.0",
     "matplotlib>=3.10.8",
     "pandas>=3.0.0",
+    "tqdm>=4.67.3",
 ]
 
 [tool.uv.sources]
