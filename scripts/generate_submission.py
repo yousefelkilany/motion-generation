@@ -16,6 +16,8 @@ from config import (
     TRANSFORMER_CONFIG,
     VAE_CONFIG,
     MASK_TRANSFORMER_PATH,
+    DATA_BASE,
+    NEW_MODELS_DIR,
 )
 from models.residual_transformer import ResidualTransformer
 from models.rvq_vae import load_rvq_vae
@@ -281,9 +283,7 @@ def generate_submission_from_csv(
 if __name__ == "__main__":
     # Test CSV path (Kaggle)
     if IS_KAGGLE:
-        TEST_CSV_PATH = Path(
-            "/kaggle/input/motion-s-hierarchical-text-to-motion-generation-for-sign-language/test.csv"
-        )
+        TEST_CSV_PATH = DATA_BASE / "test.csv"
     else:
         TEST_CSV_PATH = Path("data/test.csv")  # Local testing
 
@@ -329,7 +329,8 @@ if __name__ == "__main__":
         num_quantizers=int(VAE_CONFIG["num_quantizers"]),
     ).to(DEVICE)
 
-    checkpoint = torch.load(MASK_TRANSFORMER_PATH, map_location=DEVICE)
+    model_path = NEW_MODELS_DIR / "mask_transformer" / "best_model.pth"
+    checkpoint = torch.load(model_path, map_location=DEVICE)
     if "base_model_state_dict" in checkpoint:
         transformer.load_state_dict(checkpoint["base_model_state_dict"])
         print("   [OK] MaskTransformer loaded (from base_model_state_dict)")
