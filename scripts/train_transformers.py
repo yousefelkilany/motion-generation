@@ -131,15 +131,6 @@ def main():
 
     print(f"   [OK] Tokenized {len(token_data)} sequences")
 
-    # ============================================================
-    # NOTE: ResidualTransformer will be loaded AFTER the MaskTransformer
-    # This cell is a placeholder - actual loading happens in Cell 17
-    # ============================================================
-    print(
-        "[INFO] ResidualTransformer will be loaded after MaskTransformer (see next training section)"
-    )
-    residual_transformer_model = None  # Will be initialized later
-
     USE_PRETRAINED = False
     # ============================================================
     # Load or Train
@@ -226,14 +217,21 @@ def main():
             transformer.parameters(), lr=float(TRANSFORMER_CONFIG["lr"])
         )
 
+        residual_optimizer = torch.optim.AdamW(
+            residual_transformer_model.parameters(), lr=float(TRANSFORMER_CONFIG["lr"])
+        )
+
         # Training Loop
         print(f"   Training for {TRANSFORMER_CONFIG['epochs']} epochs...")
         for epoch in range(1, int(TRANSFORMER_CONFIG["epochs"]) + 1):
             metrics = train_epoch(
-                base_model=transformer,
                 dataloader=train_loader,
+                base_model=transformer,
                 base_optimizer=optimizer,
                 base_scheduler=None,
+                residual_model=residual_transformer_model,
+                residual_optimizer=residual_optimizer,
+                residual_scheduler=None,
                 device=DEVICE,
                 epoch=epoch,
                 writer=None,
@@ -261,7 +259,13 @@ def main():
         # Save Model
         save_path = NEW_MODELS_DIR / "mask_transformer" / "best_model.pth"
         save_path.parent.mkdir(parents=True, exist_ok=True)
-        torch.save(transformer.state_dict(), save_path)
+        torch.save(
+            {
+                "base_model_state_dict": transformer.state_dict(),
+                "residual_model_state_dict": residual_transformer_model.state_dict(),
+            },
+            save_path,
+        )
         print(f"   [OK] Model saved to {save_path}")
 
     # ============================================================

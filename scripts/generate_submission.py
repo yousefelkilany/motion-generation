@@ -345,6 +345,7 @@ if __name__ == "__main__":
         residual_transformer_model.load_state_dict(
             checkpoint["residual_model_state_dict"]
         )
+        print("   [OK] ResidualTransformer loaded (from checkpoint)")
 
     # ============================================================
     # GENERATE SUBMISSION
