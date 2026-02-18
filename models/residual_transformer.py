@@ -106,12 +106,14 @@ class ResidualTransformer(nn.Module):
                 ]
             )
 
-        # Positional encoding
-        self.pos_encoder = PositionalEncoding(latent_dim, dropout, max_seq_len)
-
         # Text encoder (CLIP) - shared with base transformer
         self.text_encoder = CLIPTextEncoder(
             clip_version=clip_version, device=device, freeze=True
+        )
+
+        # Positional encoding
+        self.pos_encoder = PositionalEncoding(
+            latent_dim, dropout, max_seq_len + self.text_encoder.max_text_length
         )
 
         # Text projection
@@ -265,6 +267,10 @@ class ResidualTransformer(nn.Module):
         # Add positional encoding
         # Combined positional encoding to avoid collision between text and motion
         xseq = torch.cat([cond, x], dim=0)  # (text_len + seq_len, B, latent_dim)
+
+        print(f"{x.shape = }")
+        print(f"{xseq.shape = }")
+
         xseq = self.pos_encoder(xseq)
 
         # Create combined padding mask
