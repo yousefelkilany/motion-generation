@@ -10,14 +10,13 @@ import torch
 from tqdm import tqdm
 
 from config import (
+    DATA_BASE,
     DEVICE,
     IS_KAGGLE,
+    NEW_MODELS_DIR,
     RVQ_VAE_PATH,
     TRANSFORMER_CONFIG,
     VAE_CONFIG,
-    MASK_TRANSFORMER_PATH,
-    DATA_BASE,
-    NEW_MODELS_DIR,
 )
 from models.residual_transformer import ResidualTransformer
 from models.rvq_vae import load_rvq_vae
@@ -268,13 +267,13 @@ def generate_submission_from_csv(
     df = pd.DataFrame(results)
     df.to_csv(output_path, index=False)
 
-    print(f"\n{'=' * 50}")
+    print("=" * 50)
     print("SUBMISSION GENERATED")
-    print(f"{'=' * 50}")
+    print("=" * 50)
     print(f"  Output file: {output_path}")
     print(f"  Total sequences: {len(results)}")
     print(f"  Columns: {list(df.columns)}")
-    print(f"{'=' * 50}")
+    print("=" * 50)
 
     return df
 

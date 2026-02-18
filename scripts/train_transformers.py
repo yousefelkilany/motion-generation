@@ -1,26 +1,25 @@
 import numpy as np
 import torch
 
-
 from config import (
     CACHE_DIR,
+    DATASET_ROOT,
     DEVICE,
+    IS_KAGGLE,
     MASK_TRANSFORMER_PATH,
-    MOTION_FEATS_DIR,  # ty:ignore[possibly-missing-import]
+    MOTION_FEATS_DIR,
+    NEW_MODELS_DIR,
     NORM_PATH,
     OUTPUT_ROOT,
     RVQ_VAE_PATH,
     TRANSFORMER_CONFIG,
     VAE_CONFIG,
-    DATASET_ROOT,
-    IS_KAGGLE,
-    NEW_MODELS_DIR,
 )
 from data.dataset import TokenizedMotionDataset, collate_fn
 from models.residual_transformer import ResidualTransformer
 from models.rvq_vae import load_rvq_vae, tokenize_all_motions
+from models.train_transformer import train_epoch, validate
 from models.transformer import MaskTransformer
-from scripts.train_transformer import train_epoch, validate
 
 
 def main():
@@ -221,30 +220,33 @@ def main():
             residual_transformer_model.parameters(), lr=float(TRANSFORMER_CONFIG["lr"])
         )
 
-        # Training Loop
-        print(f"   Training for {TRANSFORMER_CONFIG['epochs']} epochs...")
+        use_amp = True
+        scaler = torch.amp.GradScaler() if use_amp else None
+
+        # ===== PHASE 1: Train base transformer only =====
+        print("\n" + "=" * 60)
+        print("PHASE 1: Training MaskTransformer only")
+        print("=" * 60 + "\n")
         for epoch in range(1, int(TRANSFORMER_CONFIG["epochs"]) + 1):
             metrics = train_epoch(
                 dataloader=train_loader,
                 base_model=transformer,
                 base_optimizer=optimizer,
                 base_scheduler=None,
-                residual_model=residual_transformer_model,
-                residual_optimizer=residual_optimizer,
-                residual_scheduler=None,
                 device=DEVICE,
                 epoch=epoch,
-                writer=None,
+                train_residual=False,
+                train_residual_only=False,
+                use_amp=use_amp,
+                scaler=scaler,  # ty:ignore[invalid-argument-type]
             )
 
             val_metrics = validate(
                 model=transformer, dataloader=val_loader, device=DEVICE, epoch=epoch
             )
 
-            # Store metrics in training history
-            # Note: train_epoch returns 'accuracy', validate returns 'acc'
-            train_acc = metrics.get("accuracy", metrics.get("acc", 0.0))
-            val_acc = val_metrics.get("acc", val_metrics.get("accuracy", 0.0))
+            train_acc = metrics.get("accuracy", 0.0)
+            val_acc = val_metrics.get("accuracy", 0.0)
 
             training_history["epochs"].append(epoch)
             training_history["train_loss"].append(metrics["loss"])
@@ -254,6 +256,49 @@ def main():
 
             print(
                 f"   Epoch {epoch}: Train Loss {metrics['loss']:.4f}, Train Acc {train_acc:.2%}, Val Loss {val_metrics['loss']:.4f}, Val Acc {val_acc:.2%}"
+            )
+
+        # ===== PHASE 2: Train residual transformer =====
+        print("\n" + "=" * 60)
+        print("PHASE 2: Training ResidualTransformer")
+        print("=" * 60 + "\n")
+
+        residual_history = {"tl": [], "ta": [], "vl": [], "va": [], "ep": []}
+
+        for epoch in range(1, int(TRANSFORMER_CONFIG["epochs"]) + 1):
+            metrics = train_epoch(
+                dataloader=train_loader,
+                base_model=transformer,
+                base_optimizer=optimizer,
+                base_scheduler=None,
+                residual_model=residual_transformer_model,
+                residual_optimizer=residual_optimizer,
+                residual_scheduler=None,
+                vq_model=vae_model,
+                train_residual=True,
+                train_residual_only=True,
+                residual_prob=1.0,
+                use_amp=use_amp,
+                scaler=scaler,  # ty:ignore[invalid-argument-type]
+                device=DEVICE,
+                epoch=epoch,
+            )
+
+            val_metrics = validate(
+                model=transformer, dataloader=val_loader, device=DEVICE, epoch=epoch
+            )
+
+            residual_acc = metrics.get("res_acc", 0.0)
+            val_acc = val_metrics.get("accuracy", 0.0)
+
+            residual_history["epochs"].append(epoch)
+            residual_history["train_loss"].append(metrics["res_loss"])
+            residual_history["train_acc"].append(residual_acc)
+            residual_history["val_loss"].append(val_metrics["loss"])
+            residual_history["val_acc"].append(val_acc)
+
+            print(
+                f"   Epoch {epoch}: Train Loss {metrics['res_loss']:.4f}, Train Acc {residual_acc:.2%}, Val Loss {val_metrics['loss']:.4f}, Val Acc {val_acc:.2%}"
             )
 
         # Save Model

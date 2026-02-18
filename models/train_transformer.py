@@ -97,11 +97,11 @@ def train_epoch(
 
         # Train base transformer (skip if residual-only mode)
         base_loss_val = 0.0
-        acc = 0.0
+        base_accuracy = 0.0
         if not train_residual_only:
             # Use AMP if enabled
             with autocast(device, enabled=use_amp):
-                base_loss, pred_ids, acc = base_model(
+                base_loss, pred_ids, base_accuracy = base_model(
                     base_tokens,
                     texts,
                     lengths,
@@ -129,7 +129,7 @@ def train_epoch(
             base_loss_val = base_loss.item() * gradient_accumulation_steps
             accumulated_loss += base_loss_val
             total_loss += base_loss_val
-            total_acc += acc
+            total_acc += base_accuracy
             num_batches += 1
 
         # Train residual transformer (if enabled and model available)
@@ -190,7 +190,7 @@ def train_epoch(
         postfix = {}
         if not train_residual_only:
             postfix["loss"] = f"{base_loss_val:.4f}"
-            postfix["acc"] = f"{acc:.4f}"
+            postfix["accuracy"] = f"{base_accuracy:.4f}"
         if res_loss_val > 0:
             postfix["res_loss"] = f"{res_loss_val:.4f}"
             postfix["res_acc"] = f"{res_acc_val:.4f}"
@@ -288,10 +288,10 @@ def validate(
             base_tokens = tokens
 
         # Token-level metrics (on base layer)
-        loss, pred_ids, acc = model(base_tokens, texts, lengths)
+        loss, pred_ids, accuracy = model(base_tokens, texts, lengths)
 
         total_loss += loss.item()
-        total_acc += acc
+        total_acc += accuracy
         num_batches += 1
 
         # Motion-level metrics (on subset of batches)
