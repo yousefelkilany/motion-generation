@@ -37,6 +37,13 @@ def main():
         "val_acc": [],
         "epochs": [],
     }
+    residual_history = {
+        "train_loss": [],
+        "train_acc": [],
+        "val_loss": [],
+        "val_acc": [],
+        "epochs": [],
+    }
 
     # ============================================================
     # Initialize MaskTransformer
@@ -262,9 +269,6 @@ def main():
         print("\n" + "=" * 60)
         print("PHASE 2: Training ResidualTransformer")
         print("=" * 60 + "\n")
-
-        residual_history = {"tl": [], "ta": [], "vl": [], "va": [], "ep": []}
-
         for epoch in range(1, int(TRANSFORMER_CONFIG["epochs"]) + 1):
             metrics = train_epoch(
                 dataloader=train_loader,
