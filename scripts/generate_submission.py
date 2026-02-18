@@ -158,11 +158,10 @@ def is_running_in_notebook():
 
         if "IPKernelApp" in get_ipython().config:
             return True
-        # Check for terminal IPython as well
+
         if "terminal" in str(type(get_ipython())):
             return False
-    except NameError:
-        # get_ipython is not defined, so not in a notebook/IPython environment
+    except ModuleNotFoundError or NameError:
         return False
     return False
 
