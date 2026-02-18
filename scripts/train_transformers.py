@@ -270,7 +270,7 @@ def main():
         print("PHASE 2: Training ResidualTransformer")
         print("=" * 60 + "\n")
         for epoch in range(1, int(TRANSFORMER_CONFIG["epochs"]) + 1):
-            metrics = train_epoch(
+            residual_metrics = train_epoch(
                 dataloader=train_loader,
                 base_model=transformer,
                 base_optimizer=optimizer,
@@ -292,17 +292,19 @@ def main():
                 model=transformer, dataloader=val_loader, device=DEVICE, epoch=epoch
             )
 
-            residual_acc = metrics.get("res_acc", 0.0)
-            val_acc = val_metrics.get("accuracy", 0.0)
+            residual_acc = residual_metrics["residual_accuracy"]
+            residual_loss = residual_metrics["residual_loss"]
+            val_acc = val_metrics["accuracy"]
+            val_loss = val_metrics["loss"]
 
             residual_history["epochs"].append(epoch)
-            residual_history["train_loss"].append(metrics["res_loss"])
+            residual_history["train_loss"].append(residual_loss)
             residual_history["train_acc"].append(residual_acc)
-            residual_history["val_loss"].append(val_metrics["loss"])
+            residual_history["val_loss"].append(val_loss)
             residual_history["val_acc"].append(val_acc)
 
             print(
-                f"   Epoch {epoch}: Train Loss {metrics['res_loss']:.4f}, Train Acc {residual_acc:.2%}, Val Loss {val_metrics['loss']:.4f}, Val Acc {val_acc:.2%}"
+                f"   Epoch {epoch}: Train Loss {residual_loss:.4f}, Train Acc {residual_acc:.2%}, Val Loss {val_loss:.4f}, Val Acc {val_acc:.2%}"
             )
 
         # Save Model
