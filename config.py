@@ -108,7 +108,7 @@ TRANSFORMER_CONFIG = {
     "dropout": 0.1,
     "batch_size": 32,
     "lr": 2e-4,
-    "epochs": 2,  # Increase for better results
+    "epochs": 30,  # Increase for better results
     "max_token_len": 800,  # Match trained model
     "text_source": "both",  # 'sentence' or 'gloss'
 }
