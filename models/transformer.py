@@ -98,6 +98,10 @@ class PositionalEncoding(nn.Module):
         Args:
             x: (seq_len, batch, d_model)
         """
+        print(f"{x.shape = }")
+        print(f"{self.pe.shape = }")
+        print(f"{self.pe[: x.shape[0], :] = }")
+
         x = x + self.pe[: x.shape[0], :]
         return self.dropout(x)
 
