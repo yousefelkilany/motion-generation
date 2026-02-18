@@ -29,6 +29,11 @@ if IS_KAGGLE:
     )
     DATASET_ROOT = DATA_BASE / "Train"
     MOTION_FEATS_DIR = DATA_BASE / "Motion-Features"
+    TOKENS_PATH = (
+        KAGGLE_INPUT
+        / "datasets/youssefelkilany"
+        / "motion-generation-tokens/tokens.npy"
+    )
     NORM_PATH = DATA_BASE / "normalization.npz"  # Add this file to your dataset
 
     # Pre-trained models
@@ -69,9 +74,9 @@ if IS_KAGGLE:
     )
 
     # Output
-    OUTPUT_ROOT = PROJECT_ROOT / "output"
+    OUTPUT_ROOT = PROJECT_ROOT / ".." / "output"
     NEW_MODELS_DIR = OUTPUT_ROOT / "models"
-    CACHE_DIR = PROJECT_ROOT / "tokenized_cache"
+    CACHE_DIR = PROJECT_ROOT / ".." / "tokenized_cache"
 else:
     raise Exception("Currently, code is not ready for local use")
     DATASET_ROOT = PROJECT_ROOT / "dataset"
@@ -108,7 +113,7 @@ TRANSFORMER_CONFIG = {
     "dropout": 0.1,
     "batch_size": 32,
     "lr": 2e-4,
-    "epochs": 30,  # Increase for better results
+    "epochs": 20,
     "max_token_len": 800,  # Match trained model
     "text_source": "both",  # 'sentence' or 'gloss'
 }

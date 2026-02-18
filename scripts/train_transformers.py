@@ -14,6 +14,7 @@ from config import (
     RVQ_VAE_PATH,
     TRANSFORMER_CONFIG,
     VAE_CONFIG,
+    TOKENS_PATH,
 )
 from data.dataset import TokenizedMotionDataset, collate_fn
 from models.residual_transformer import ResidualTransformer
@@ -122,7 +123,6 @@ def main():
     # ============================================================
     # Tokenize Dataset (or load from cache)
     # ============================================================
-    token_cache_path = CACHE_DIR / "tokens.npy"
     print("\nTokenizing dataset...")
 
     token_data = tokenize_all_motions(
@@ -132,7 +132,7 @@ def main():
         mean=mean,
         std=std,
         device=DEVICE,
-        cache_path=str(token_cache_path),
+        cache_path=str(TOKENS_PATH),
     )
 
     print(f"   [OK] Tokenized {len(token_data)} sequences")
