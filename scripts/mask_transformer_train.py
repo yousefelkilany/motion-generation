@@ -14,6 +14,7 @@ from config import (
     VAE_CONFIG,
     DATASET_ROOT,
     IS_KAGGLE,
+    NEW_MODELS_DIR,
 )
 from data.dataset import TokenizedMotionDataset, collate_fn
 from models.residual_transformer import ResidualTransformer
@@ -256,11 +257,10 @@ else:
         )
 
     # Save Model
-    # NEW_MODELS_DIR.mkdir(parents=True, exist_ok=True)
-    # save_path = NEW_MODELS_DIR / "mask_transformer" / "best_model.pth"
-    # save_path.parent.mkdir(parents=True, exist_ok=True)
-    # torch.save(transformer.state_dict(), save_path)
-    # print(f"   [OK] Model saved to {save_path}")
+    save_path = NEW_MODELS_DIR / "mask_transformer" / "best_model.pth"
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(transformer.state_dict(), save_path)
+    print(f"   [OK] Model saved to {save_path}")
 
 # ============================================================
 # Display Training Summary

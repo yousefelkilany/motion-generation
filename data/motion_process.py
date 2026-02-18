@@ -433,102 +433,32 @@ def process_bvh_motion(
 
         if len(fid_l) == 0 or len(fid_r) == 0:
             # Return zeros if no foot joints found
-            feet_l = np.zeros((len(positions) - 1, 1))
-            feet_r = np.zeros((len(positions) - 1, 1))
-            return feet_l, feet_r
+            return np.zeros((len(positions) - 1, 1)), np.zeros((len(positions) - 1, 1))
 
-        # def get_f(fid):
-        #     if len(fid) >= 2:
-        #         v1 = np.sum(
-        #             (positions[1:, fid[0]] - positions[:-1, fid[0]]) ** 2, axis=-1
-        #         )
-        #         v2 = np.sum(
-        #             (positions[1:, fid[1]] - positions[:-1, fid[1]]) ** 2, axis=-1
-        #         )
-        #         return np.stack(
-        #             [
-        #                 (v1 < velfactor[0])
-        #                 & (positions[:-1, fid[0], 1] < heightfactor[0]),
-        #                 (v2 < velfactor[1])
-        #                 & (positions[:-1, fid[1], 1] < heightfactor[1]),
-        #             ],
-        #             -1,
-        #         ).astype(float)
-        #     v = np.sum((positions[1:, fid[0]] - positions[:-1, fid[0]]) ** 2, axis=-1)
-        #     f = (
-        #         (v < velfactor[0]) & (positions[:-1, fid[0], 1] < heightfactor[0])
-        #     ).astype(float)
-        #     return np.stack([f, f], -1)
-
-        # return get_f(fid_l), get_f(fid_r)
-
-        # Left foot
-        if len(fid_l) >= 2:
-            feet_l_x = (positions[1:, fid_l[0], 0] - positions[:-1, fid_l[0], 0]) ** 2
-            feet_l_y = (positions[1:, fid_l[0], 1] - positions[:-1, fid_l[0], 1]) ** 2
-            feet_l_z = (positions[1:, fid_l[0], 2] - positions[:-1, fid_l[0], 2]) ** 2
-            feet_l_h = positions[:-1, fid_l[0], 1]
-            feet_l_1 = (
-                ((feet_l_x + feet_l_y + feet_l_z) < velfactor[0])
-                & (feet_l_h < heightfactor[0])
+        def get_f(fid):
+            if len(fid) >= 2:
+                v1 = np.sum(
+                    (positions[1:, fid[0]] - positions[:-1, fid[0]]) ** 2, axis=-1
+                )
+                v2 = np.sum(
+                    (positions[1:, fid[1]] - positions[:-1, fid[1]]) ** 2, axis=-1
+                )
+                return np.stack(
+                    [
+                        (v1 < velfactor[0])
+                        & (positions[:-1, fid[0], 1] < heightfactor[0]),
+                        (v2 < velfactor[1])
+                        & (positions[:-1, fid[1], 1] < heightfactor[1]),
+                    ],
+                    -1,
+                ).astype(float)
+            v = np.sum((positions[1:, fid[0]] - positions[:-1, fid[0]]) ** 2, axis=-1)
+            f = (
+                (v < velfactor[0]) & (positions[:-1, fid[0], 1] < heightfactor[0])
             ).astype(float)
+            return np.stack([f, f], -1)
 
-            feet_l_x2 = (positions[1:, fid_l[1], 0] - positions[:-1, fid_l[1], 0]) ** 2
-            feet_l_y2 = (positions[1:, fid_l[1], 1] - positions[:-1, fid_l[1], 1]) ** 2
-            feet_l_z2 = (positions[1:, fid_l[1], 2] - positions[:-1, fid_l[1], 2]) ** 2
-            feet_l_h2 = positions[:-1, fid_l[1], 1]
-            feet_l_2 = (
-                ((feet_l_x2 + feet_l_y2 + feet_l_z2) < velfactor[1])
-                & (feet_l_h2 < heightfactor[1])
-            ).astype(float)
-            feet_l = np.stack([feet_l_1, feet_l_2], axis=-1)
-        else:
-            feet_l_x = (positions[1:, fid_l[0], 0] - positions[:-1, fid_l[0], 0]) ** 2
-            feet_l_y = (positions[1:, fid_l[0], 1] - positions[:-1, fid_l[0], 1]) ** 2
-            feet_l_z = (positions[1:, fid_l[0], 2] - positions[:-1, fid_l[0], 2]) ** 2
-            feet_l_h = positions[:-1, fid_l[0], 1]
-            feet_l_1 = (
-                ((feet_l_x + feet_l_y + feet_l_z) < velfactor[0])
-                & (feet_l_h < heightfactor[0])
-            ).astype(float)
-            feet_l = np.stack(
-                [feet_l_1, feet_l_1], axis=-1
-            )  # Duplicate if only one joint
-
-        # Right foot
-        if len(fid_r) >= 2:
-            feet_r_x = (positions[1:, fid_r[0], 0] - positions[:-1, fid_r[0], 0]) ** 2
-            feet_r_y = (positions[1:, fid_r[0], 1] - positions[:-1, fid_r[0], 1]) ** 2
-            feet_r_z = (positions[1:, fid_r[0], 2] - positions[:-1, fid_r[0], 2]) ** 2
-            feet_r_h = positions[:-1, fid_r[0], 1]
-            feet_r_1 = (
-                ((feet_r_x + feet_r_y + feet_r_z) < velfactor[0])
-                & (feet_r_h < heightfactor[0])
-            ).astype(float)
-
-            feet_r_x2 = (positions[1:, fid_r[1], 0] - positions[:-1, fid_r[1], 0]) ** 2
-            feet_r_y2 = (positions[1:, fid_r[1], 1] - positions[:-1, fid_r[1], 1]) ** 2
-            feet_r_z2 = (positions[1:, fid_r[1], 2] - positions[:-1, fid_r[1], 2]) ** 2
-            feet_r_h2 = positions[:-1, fid_r[1], 1]
-            feet_r_2 = (
-                ((feet_r_x2 + feet_r_y2 + feet_r_z2) < velfactor[1])
-                & (feet_r_h2 < heightfactor[1])
-            ).astype(float)
-            feet_r = np.stack([feet_r_1, feet_r_2], axis=-1)
-        else:
-            feet_r_x = (positions[1:, fid_r[0], 0] - positions[:-1, fid_r[0], 0]) ** 2
-            feet_r_y = (positions[1:, fid_r[0], 1] - positions[:-1, fid_r[0], 1]) ** 2
-            feet_r_z = (positions[1:, fid_r[0], 2] - positions[:-1, fid_r[0], 2]) ** 2
-            feet_r_h = positions[:-1, fid_r[0], 1]
-            feet_r_1 = (
-                ((feet_r_x + feet_r_y + feet_r_z) < velfactor[0])
-                & (feet_r_h < heightfactor[0])
-            ).astype(float)
-            feet_r = np.stack(
-                [feet_r_1, feet_r_1], axis=-1
-            )  # Duplicate if only one joint
-
-        return feet_l, feet_r
+        return get_f(fid_l), get_f(fid_r)
 
     def get_con6d_params(r_rot, r_pos, quat_params):
         """Remove root rotations and convert to 6D representation."""

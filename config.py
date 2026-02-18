@@ -24,6 +24,7 @@ USE_PRETRAINED = True  # True = Quick Start, False = Full Training
 if IS_KAGGLE:
     DATA_BASE = (
         KAGGLE_INPUT
+        / "competitions"
         / "motion-s-hierarchical-text-to-motion-generation-for-sign-language"
     )
     DATASET_ROOT = DATA_BASE / "Train"
@@ -33,6 +34,7 @@ if IS_KAGGLE:
     # Pre-trained models
     PRETRAINED_RVQ_VAE_PATH = (
         KAGGLE_INPUT
+        / "models/antonygithinji"
         / "motion-s-vae-rvq"
         / "pytorch"
         / "default"
@@ -49,6 +51,7 @@ if IS_KAGGLE:
     )
     PRETRAINED_LENGTH_ESTIMATOR_PATH = (
         KAGGLE_INPUT
+        / "models/antonygithinji"
         / "motion-s-length-estimator"
         / "pytorch"
         / "default"
@@ -57,6 +60,7 @@ if IS_KAGGLE:
     )
     PRETRAINED_ALIGNMENT_PATH = (
         KAGGLE_INPUT
+        / "models/antonygithinji"
         / "motion-s-evaluator-t2m"
         / "pytorch"
         / "default"
@@ -69,6 +73,7 @@ if IS_KAGGLE:
     NEW_MODELS_DIR = OUTPUT_ROOT / "models"
     CACHE_DIR = PROJECT_ROOT / "tokenized_cache"
 else:
+    raise Exception("Currently, code is not ready for local use")
     DATASET_ROOT = PROJECT_ROOT / "dataset"
     NORM_PATH = PROJECT_ROOT / "data" / "motion-s_feats" / "normalization.npz"
     PRETRAINED_RVQ_VAE_PATH = PROJECT_ROOT / "models" / "rvq_vae_best.pth"

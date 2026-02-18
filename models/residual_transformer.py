@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Residual Transformer for hierarchical motion token generation.
 
@@ -6,6 +5,13 @@ Predicts residual layer tokens (layers 1-5) given previous layers.
 Based on MoMask paper: Generative Masked Modeling of 3D Human Motions.
 """
 
+from typing import List, Tuple
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+from models.rvq_vae import RVQVAE
 from models.text_encoder import CLIPTextEncoder, TextProjector
 from models.transformer import (
     InputProcess,
@@ -13,11 +19,6 @@ from models.transformer import (
     PositionalEncoding,
     lengths_to_mask,
 )
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from typing import Tuple, List
 
 
 class ResidualTransformer(nn.Module):
@@ -184,7 +185,7 @@ class ResidualTransformer(nn.Module):
         return cond_emb, text_mask
 
     def embed_previous_layers(
-        self, prev_layer_tokens: List[torch.Tensor], vq_model: nn.Module
+        self, prev_layer_tokens: List[torch.Tensor], vq_model: RVQVAE
     ) -> torch.Tensor:
         """
         Embed tokens from previous layers by summing their codebook embeddings.
@@ -294,7 +295,7 @@ class ResidualTransformer(nn.Module):
         layer_idx: int,
         texts: List[str],
         m_lens: torch.Tensor,
-        vq_model: nn.Module,
+        vq_model: RVQVAE,
     ) -> Tuple[torch.Tensor, torch.Tensor, float]:
         """
         Training forward pass.
@@ -406,7 +407,7 @@ class ResidualTransformer(nn.Module):
         layer_idx: int,
         texts: List[str],
         m_lens: torch.Tensor,
-        vq_model: nn.Module,
+        vq_model: RVQVAE,
         cond_scale: float = 5.0,
         temperature: float = 1.0,
         topk_filter_thres: float = 0.9,

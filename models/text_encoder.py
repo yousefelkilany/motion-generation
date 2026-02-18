@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 CLIP Text Encoder for conditioning the Masked Transformer.
 Uses OpenAI's CLIP model to encode text prompts into embeddings.
@@ -71,7 +70,7 @@ class CLIPTextEncoder(nn.Module):
         # Store clip module for tokenization
         self.clip = clip  # ty:ignore[unresolved-attribute]
 
-    def tokenize(self, texts: List[str]) -> torch.Tensor:
+    def tokenize(self, texts: str | List[str]) -> torch.Tensor:
         """
         Tokenize text using CLIP tokenizer.
 
@@ -84,7 +83,7 @@ class CLIPTextEncoder(nn.Module):
         tokens = self.clip.tokenize(texts, truncate=True).to(self.device)
         return tokens
 
-    def encode_text(self, texts: List[str]) -> torch.Tensor:
+    def encode_text(self, texts: str | List[str]) -> torch.Tensor:
         """
         Encode text to global CLIP embeddings.
 
@@ -104,7 +103,9 @@ class CLIPTextEncoder(nn.Module):
 
         return embeddings.float()
 
-    def encode_text_tokens(self, texts: List[str]) -> Tuple[torch.Tensor, torch.Tensor]:
+    def encode_text_tokens(
+        self, texts: str | List[str]
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Encode text to token-level embeddings (before final projection).
         Useful for cross-attention conditioning.
@@ -133,7 +134,9 @@ class CLIPTextEncoder(nn.Module):
 
         return x.float(), attention_mask
 
-    def forward(self, texts: List[str], return_tokens: bool = False) -> torch.Tensor:
+    def forward(
+        self, texts: str | List[str], return_tokens: bool = False
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         """
         Forward pass.
 
@@ -187,7 +190,7 @@ if __name__ == "__main__":
     # The output dimension should match the transformer's latent dimension
     # (Assuming transformer's latent_dim is 384 from TRANSFORMER_CONFIG in next section)
     text_projector = TextProjector(
-        text_dim=512, latent_dim=TRANSFORMER_CONFIG["latent_dim"]
+        text_dim=512, latent_dim=int(TRANSFORMER_CONFIG["latent_dim"])
     ).to(DEVICE)
 
     # Example: Encode a text prompt

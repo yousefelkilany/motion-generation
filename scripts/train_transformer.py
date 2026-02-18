@@ -9,8 +9,9 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
+from models.residual_transformer import ResidualTransformer
 from models.rvq_vae import RVQVAE
-from models.transformer import MaskTransformer, ResidualTransformer
+from models.transformer import MaskTransformer
 
 
 def train_epoch(
