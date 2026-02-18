@@ -1,7 +1,6 @@
 # ============================================================
 # SUBMISSION GENERATION (CSV-based for Kaggle)
 # ============================================================
-
 import gc
 from pathlib import Path
 
@@ -10,9 +9,10 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 
-from config import DEVICE, IS_KAGGLE, RVQ_VAE_PATH
+from config import DEVICE, IS_KAGGLE, RVQ_VAE_PATH, TRANSFORMER_CONFIG, VAE_CONFIG
+from models.residual_transformer import ResidualTransformer
 from models.rvq_vae import load_rvq_vae
-from scripts.mask_transformer_train import residual_transformer_model, transformer
+from models.transformer import MaskTransformer
 
 gc.collect()
 torch.cuda.empty_cache()
@@ -29,17 +29,6 @@ SUBMISSION_CONFIG = {
     "default_token_length": 50,  # Default token length if estimation fails
     "use_residual": True,  # Set to False to disable residual layers entirely
 }
-
-# Test CSV path (Kaggle)
-if IS_KAGGLE:
-    TEST_CSV_PATH = Path(
-        "/kaggle/input/motion-s-hierarchical-text-to-motion-generation-for-sign-language/test.csv"
-    )
-else:
-    TEST_CSV_PATH = Path("data/test.csv")  # Local testing
-
-print(f"Test CSV path: {TEST_CSV_PATH}")
-print(f"Test CSV exists: {TEST_CSV_PATH.exists()}")
 
 
 # ============================================================
@@ -172,8 +161,6 @@ def is_running_in_notebook():
 # ============================================================
 # Main Submission Generation (CSV-based)
 # ============================================================
-
-
 def generate_submission_from_csv(
     test_csv_path: Path,
     transformer_model,
@@ -284,91 +271,152 @@ def generate_submission_from_csv(
     return df
 
 
-# ============================================================
-# Load RVQ-VAE Model
-# ============================================================
+if __name__ == "__main__":
+    # Test CSV path (Kaggle)
+    if IS_KAGGLE:
+        TEST_CSV_PATH = Path(
+            "/kaggle/input/motion-s-hierarchical-text-to-motion-generation-for-sign-language/test.csv"
+        )
+    else:
+        TEST_CSV_PATH = Path("data/test.csv")  # Local testing
 
-# Load the pretrained RVQ-VAE
-vae_model, config = load_rvq_vae(RVQ_VAE_PATH, device="cuda")
+    print(f"Test CSV path: {TEST_CSV_PATH}")
+    print(f"Test CSV exists: {TEST_CSV_PATH.exists()}")
 
-# ============================================================
-# GENERATE SUBMISSION
-# ============================================================
+    # ============================================================
+    # Load RVQ-VAE Model
+    # ============================================================
+    # Load the pretrained RVQ-VAE
+    vae_model, config = load_rvq_vae(RVQ_VAE_PATH, device="cuda")
 
-# Check if residual transformer is available
-has_residual = (
-    "residual_transformer_model" in dir() and residual_transformer_model is not None
-)
+    print("Initializing MaskTransformer...")
+    transformer = MaskTransformer(
+        num_tokens=int(VAE_CONFIG["num_embeddings"]),  # VAE codebook size
+        code_dim=int(VAE_CONFIG["latent_dim"]),
+        latent_dim=int(TRANSFORMER_CONFIG["latent_dim"]),
+        ff_size=int(TRANSFORMER_CONFIG["ff_size"]),
+        num_layers=int(TRANSFORMER_CONFIG["num_layers"]),
+        num_heads=int(TRANSFORMER_CONFIG["num_heads"]),
+        dropout=float(TRANSFORMER_CONFIG["dropout"]),
+        clip_dim=512,
+        clip_version="ViT-B/32",
+        cond_drop_prob=0.1,
+        device="cuda",
+        max_seq_len=int(TRANSFORMER_CONFIG["max_token_len"]),
+    ).to(DEVICE)
 
-print("\n" + "=" * 60)
-print("SUBMISSION GENERATION")
-print("=" * 60)
-print(f"  Transformer model: {'✓ Loaded' if transformer else '✗ Missing'}")
-print(f"  VAE model: {'✓ Loaded' if vae_model else '✗ Missing'}")
-print(
-    f"  Residual model: {'✓ Loaded' if has_residual else '✗ Not available (using zeros)'}"
-)
-print(f"  Text source: {SUBMISSION_CONFIG['text_source']}")
-print(f"  Use residual: {SUBMISSION_CONFIG['use_residual'] and has_residual}")
-print("=" * 60)
+    print("Initializing ResidualTransformer...")
+    residual_transformer_model = ResidualTransformer(
+        num_tokens=int(VAE_CONFIG["num_embeddings"]),
+        code_dim=int(VAE_CONFIG["latent_dim"]),
+        latent_dim=int(TRANSFORMER_CONFIG["latent_dim"]),
+        ff_size=int(TRANSFORMER_CONFIG["ff_size"]),
+        num_layers=int(TRANSFORMER_CONFIG["num_layers"]),
+        num_heads=int(TRANSFORMER_CONFIG["num_heads"]),
+        dropout=float(TRANSFORMER_CONFIG["dropout"]),
+        clip_dim=512,
+        clip_version="ViT-B/32",
+        cond_drop_prob=0.1,
+        device="cuda",
+        max_seq_len=int(TRANSFORMER_CONFIG["max_token_len"]),
+        num_quantizers=int(VAE_CONFIG["num_quantizers"]),
+    ).to(DEVICE)
 
-# Generate submission from test CSV
-if TEST_CSV_PATH.exists():
-    submission_df = generate_submission_from_csv(
-        test_csv_path=TEST_CSV_PATH,
-        transformer_model=transformer,
-        vae_model=vae_model,
-        residual_model=residual_transformer_model if has_residual else None,
-        output_path="submission.csv",
-        config=SUBMISSION_CONFIG,
+    checkpoint_path = ""
+    checkpoint = torch.load(checkpoint_path, map_location=DEVICE)
+    if "base_model_state_dict" in checkpoint:
+        transformer.load_state_dict(checkpoint["base_model_state_dict"])
+        print("   [OK] MaskTransformer loaded (from base_model_state_dict)")
+    elif "model_state_dict" in checkpoint:
+        transformer.load_state_dict(checkpoint["model_state_dict"])
+        print("   [OK] MaskTransformer loaded (from model_state_dict)")
+    else:
+        transformer.load_state_dict(checkpoint)
+        print("   [OK] MaskTransformer loaded (direct state dict)")
+
+    if "residual_model_state_dict" in checkpoint:
+        residual_transformer_model.load_state_dict(
+            checkpoint["residual_model_state_dict"]
+        )
+
+    # ============================================================
+    # GENERATE SUBMISSION
+    # ============================================================
+
+    # Check if residual transformer is available
+    has_residual = (
+        "residual_transformer_model" in dir() and residual_transformer_model is not None
     )
 
-    # Display sample
-    if is_running_in_notebook() and submission_df is not None:
-        print("\nSample rows:")
-        display(submission_df.head(3))  # noqa: F821  # type: ignore[unresolved-reference]
-else:
-    print(f"\n⚠ Test CSV not found at: {TEST_CSV_PATH}")
-    print("  Expected format:")
-    print("    id,sentence,gloss")
-    print("    6420249,Mary never told me...,ME NEVER TOLD...")
+    print("\n" + "=" * 60)
+    print("SUBMISSION GENERATION")
+    print("=" * 60)
+    print(f"  Transformer model: {'✓ Loaded' if transformer else '✗ Missing'}")
+    print(f"  VAE model: {'✓ Loaded' if vae_model else '✗ Missing'}")
+    print(
+        f"  Residual model: {'✓ Loaded' if has_residual else '✗ Not available (using zeros)'}"
+    )
+    print(f"  Text source: {SUBMISSION_CONFIG['text_source']}")
+    print(f"  Use residual: {SUBMISSION_CONFIG['use_residual'] and has_residual}")
+    print("=" * 60)
 
-# ============================================================
-# VERIFY SUBMISSION FILE
-# ============================================================
-from pathlib import Path
+    # Generate submission from test CSV
+    if TEST_CSV_PATH.exists():
+        submission_df = generate_submission_from_csv(
+            test_csv_path=TEST_CSV_PATH,
+            transformer_model=transformer,
+            vae_model=vae_model,
+            residual_model=residual_transformer_model if has_residual else None,
+            output_path="submission.csv",
+            config=SUBMISSION_CONFIG,
+        )
 
-submission_file = Path("submission.csv")
+        # Display sample
+        if is_running_in_notebook() and submission_df is not None:
+            print("\nSample rows:")
+            display(submission_df.head(3))  # noqa: F821  # type: ignore[unresolved-reference]
+    else:
+        print(f"\n⚠ Test CSV not found at: {TEST_CSV_PATH}")
+        print("  Expected format:")
+        print("    id,sentence,gloss")
+        print("    6420249,Mary never told me...,ME NEVER TOLD...")
 
-if submission_file.exists():
-    df = pd.read_csv(submission_file)
+    # ============================================================
+    # VERIFY SUBMISSION FILE
+    # ============================================================
+    from pathlib import Path
 
-    print("✓ submission.csv successfully created!")
-    print(f"\n  File size: {submission_file.stat().st_size / 1024:.2f} KB")
-    print(f"  Sequences: {len(df)}")
-    print(f"  Columns: {list(df.columns)}")
+    submission_file = Path("submission.csv")
 
-    # Count residual columns dynamically
-    residual_cols = [c for c in df.columns if c.startswith("residual_")]
-    print(f"  Residual layers: {len(residual_cols)}")
+    if submission_file.exists():
+        df = pd.read_csv(submission_file)
 
-    # Sample token lengths
-    if len(df) > 0:
-        sample_base = df["base_tokens"].iloc[0]
-        sample_len = len(sample_base.split())
-        print(f"\n  Sample base token length: {sample_len} tokens")
+        print("✓ submission.csv successfully created!")
+        print(f"\n  File size: {submission_file.stat().st_size / 1024:.2f} KB")
+        print(f"  Sequences: {len(df)}")
+        print(f"  Columns: {list(df.columns)}")
 
-        # Check if first residual layer contains zeros
-        if residual_cols:
-            sample_res = df[residual_cols[0]].iloc[0]
-            res_tokens = list(map(int, sample_res.split()))
-            all_zeros = all(t == 0 for t in res_tokens)
-            print(
-                f"  Residuals are zeros: {'Yes' if all_zeros else 'No (using residual transformer)'}"
-            )
+        # Count residual columns dynamically
+        residual_cols = [c for c in df.columns if c.startswith("residual_")]
+        print(f"  Residual layers: {len(residual_cols)}")
 
-    print("\n" + "=" * 50)
-    print("Ready to submit! 🚀")
-    print("=" * 50)
-else:
-    print("⚠ submission.csv not found")
+        # Sample token lengths
+        if len(df) > 0:
+            sample_base = df["base_tokens"].iloc[0]
+            sample_len = len(sample_base.split())
+            print(f"\n  Sample base token length: {sample_len} tokens")
+
+            # Check if first residual layer contains zeros
+            if residual_cols:
+                sample_res = df[residual_cols[0]].iloc[0]
+                res_tokens = list(map(int, sample_res.split()))
+                all_zeros = all(t == 0 for t in res_tokens)
+                print(
+                    f"  Residuals are zeros: {'Yes' if all_zeros else 'No (using residual transformer)'}"
+                )
+
+        print("\n" + "=" * 50)
+        print("Ready to submit! 🚀")
+        print("=" * 50)
+    else:
+        print("⚠ submission.csv not found")
