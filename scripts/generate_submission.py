@@ -9,7 +9,14 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 
-from config import DEVICE, IS_KAGGLE, RVQ_VAE_PATH, TRANSFORMER_CONFIG, VAE_CONFIG
+from config import (
+    DEVICE,
+    IS_KAGGLE,
+    RVQ_VAE_PATH,
+    TRANSFORMER_CONFIG,
+    VAE_CONFIG,
+    MASK_TRANSFORMER_PATH,
+)
 from models.residual_transformer import ResidualTransformer
 from models.rvq_vae import load_rvq_vae
 from models.transformer import MaskTransformer
@@ -322,8 +329,7 @@ if __name__ == "__main__":
         num_quantizers=int(VAE_CONFIG["num_quantizers"]),
     ).to(DEVICE)
 
-    checkpoint_path = ""
-    checkpoint = torch.load(checkpoint_path, map_location=DEVICE)
+    checkpoint = torch.load(MASK_TRANSFORMER_PATH, map_location=DEVICE)
     if "base_model_state_dict" in checkpoint:
         transformer.load_state_dict(checkpoint["base_model_state_dict"])
         print("   [OK] MaskTransformer loaded (from base_model_state_dict)")
